@@ -1,0 +1,53 @@
+name: DevOps CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::127214164288:role/GitHubActions-VLE5
+          aws-region: ap-south-1
+
+      - name: Configure kubectl for EKS
+        run: |
+          aws eks update-kubeconfig \
+            --region ap-south-1 \
+            --name vle-5-cluster
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -t 127214164288.dkr.ecr.ap-south-1.amazonaws.com/vle-5:${{ github.sha }} \
+            ./app
+
+      - name: Push Image to ECR
+        run: |
+          docker push \
+            127214164288.dkr.ecr.ap-south-1.amazonaws.com/vle-5:${{ github.sha }}
+
+      - name: Update Kubernetes Deployment
+        run: |
+          kubectl set image deployment/devops-app \
+            devops-container=127214164288.dkr.ecr.ap-south-1.amazonaws.com/vle-5:${{ github.sha }}
+
+      - name: Wait for Deployment
+        run: |
+          kubectl rollout status deployment/devops-app
