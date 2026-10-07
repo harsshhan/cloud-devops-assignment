@@ -2,16 +2,19 @@ pipeline {
     agent any
 
     stages {
-
         stage('Build') {
             steps {
-                sh 'docker build -t myapp .'
+                dir('vle-7') {
+                    sh 'docker build -t myapp .'
+                }
             }
         }
 
         stage('Deploy') {
             steps {
-                sh 'kubectl apply -f deployment.yaml'
+                dir('vle-7') {
+                    sh 'kubectl apply -f deployment.yaml'
+                }
             }
         }
     }
