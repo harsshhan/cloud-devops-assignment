@@ -5,7 +5,10 @@ pipeline {
         stage('Build') {
             steps {
                 dir('vle-7') {
-                    sh 'docker build -t myapp .'
+                    sh '''
+                        eval $(minikube docker-env)
+                        docker build -t myapp .
+                    '''
                 }
             }
         }
