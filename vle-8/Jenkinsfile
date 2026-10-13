@@ -17,11 +17,7 @@ pipeline {
 
         stage('Load Image to Minikube') {
             steps {
-                sh '''
-                    sudo -H -u ubuntu env \
-                    MINIKUBE_HOME=/home/ubuntu/.minikube \
-                    minikube image load myapp:v2
-                '''
+                sh 'sudo -H -u ubuntu /usr/local/bin/minikube image load myapp:v2'
             }
         }
 
