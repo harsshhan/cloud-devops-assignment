@@ -1,0 +1,39 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build v2') {
+            steps {
+                dir('vle-8') {
+                    sh 'docker build -t myapp:v2 .'
+                }
+            }
+        }
+
+        stage('Load Image to Minikube') {
+            steps {
+                sh 'minikube image load myapp:v2'
+            }
+        }
+
+        stage('Deploy Green') {
+            steps {
+                dir('vle-8') {
+                    sh 'kubectl apply -f deployment-green.yaml'
+                }
+            }
+        }
+
+        stage('Switch Traffic') {
+            steps {
+                input message: 'Switch traffic from Blue to Green?'
+                dir('vle-8') {
+                    sh '''
+                    kubectl patch service myapp-service \
+                    -p '{"spec":{"selector":{"app":"myapp","color":"green"}}}'
+                    '''
+                }
+            }
+        }
+    }
+}
