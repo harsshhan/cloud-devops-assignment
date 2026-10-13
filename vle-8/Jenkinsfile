@@ -1,7 +1,12 @@
 pipeline {
     agent any
 
+    environment {
+        KUBECONFIG = '/var/lib/jenkins/.kube/config'
+    }
+
     stages {
+
         stage('Build v2') {
             steps {
                 dir('vle-8') {
@@ -12,7 +17,11 @@ pipeline {
 
         stage('Load Image to Minikube') {
             steps {
-                sh 'minikube image load myapp:v2'
+                sh '''
+                    sudo -H -u ubuntu env \
+                    MINIKUBE_HOME=/home/ubuntu/.minikube \
+                    minikube image load myapp:v2
+                '''
             }
         }
 
@@ -27,10 +36,11 @@ pipeline {
         stage('Switch Traffic') {
             steps {
                 input message: 'Switch traffic from Blue to Green?'
+
                 dir('vle-8') {
                     sh '''
-                    kubectl patch service myapp-service \
-                    -p '{"spec":{"selector":{"app":"myapp","color":"green"}}}'
+                        kubectl patch service myapp-service \
+                        -p '{"spec":{"selector":{"app":"myapp","color":"green"}}}'
                     '''
                 }
             }
